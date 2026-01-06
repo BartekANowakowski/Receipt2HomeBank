@@ -1,0 +1,7 @@
+{
+  "name": "Receipt2HomeBank",
+  "description": "AI-powered receipt scanner that automates categorization and CSV export for HomeBank personal finance software.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
