@@ -2,6 +2,12 @@
 
 A mobile-first web application designed to automate receipt entry for [**HomeBank**](https://www.gethomebank.org/en/) personal finance software using AI.
 
+<p align="center">
+  <img src=".attachments/screenshot1.png" alt="Scan Receipt" width="30%">
+  <img src=".attachments/screenshot2.png" alt="Review Data" width="30%">
+  <img src=".attachments/screenshot3.png" alt="Export to HomeBank" width="30%">
+</p>
+
 ## Core Features
 
 - **AI OCR Scanning**: Uses Gemini 2.5/3 to extract store names, dates, items, and totals from receipt photos.
