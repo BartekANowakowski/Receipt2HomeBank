@@ -3,16 +3,17 @@
 A mobile-first web application designed to automate receipt entry for [**HomeBank**](https://www.gethomebank.org/en/) personal finance software using AI.
 
 <p align="center">
-  <img src=".attachments/screenshot1.png" alt="Scan Receipt" width="30%">
-  <img src=".attachments/screenshot2.png" alt="Review Data" width="30%">
-  <img src=".attachments/screenshot3.png" alt="Export to HomeBank" width="30%">
+  <img src=".atatchments\Receipt2HomeBank (1).JPEG" alt="Scan Receipt" width="30%">
+  <img src=".atatchments\Receipt2HomeBank (2).JPEG" alt="Review Data" width="30%">
+  <img src=".atatchments\Receipt2HomeBank (3).JPEG" alt="Export to HomeBank" width="30%">
 </p>
 
 ## Core Features
 
 - **AI OCR Scanning**: Uses Gemini 2.5/3 to extract store names, dates, items, and totals from receipt photos.
+- **Promotion Handling**: Automatically calculates the final value of items by including promotions listed on separate lines or at the end of the receipt.
 - **Smart Categorization**: Automatically maps items to your hierarchical HomeBank categories based on AI context.
-- **Store Mapping**: Clean up messy OCR store names (e.g., "JM DIERONIMO..." -> "Biedronka") via custom settings.
+- **Store Mapping**: Clean up messy OCR store names (e.g., "Kaufland Polska Markety Sp.z o.o.Sp.j." -> "Kaufland") via custom settings.
 - **CSV Import (Append Mode)**: Load existing HomeBank CSV files to add new scans to an existing session.
 - **Batch Export**: Download a semicolon-separated CSV formatted specifically for HomeBank import.
 - **Mobile-First Design**: Optimized for mobile browsers with "Click to Confirm" deletions and camera integration.
