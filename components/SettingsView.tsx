@@ -117,36 +117,18 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, onSave, onClose, 
   }, [accounts, searchTerm]);
 
   const groupedCategories = useMemo(() => {
-    // 1. Get all root categories
-    const roots = categories.filter(c => !c.parent).sort((a, b) => a.name.localeCompare(b.name));
+    const groups: Record<string, CategoryDef[]> = {};
+    const topLevelNames = categories.filter(c => !c.parent).map(c => c.name);
     
-    // 2. Map roots to groups with filtering
-    return roots.map(root => {
-        const allChildren = categories.filter(c => c.parent === root.name).sort((a, b) => a.name.localeCompare(b.name));
-        
-        if (!searchTerm.trim()) {
-            return { parent: root, children: allChildren };
-        }
+    topLevelNames.forEach(name => {
+        groups[name] = categories.filter(c => c.parent === name).sort((a, b) => a.name.localeCompare(b.name));
+    });
 
-        const lowerTerm = searchTerm.toLowerCase();
-        // Check if parent matches
-        const parentMatches = root.name.toLowerCase().includes(lowerTerm) || 
-                              (root.description && root.description.toLowerCase().includes(lowerTerm));
-        
-        // Filter matching children
-        const matchingChildren = allChildren.filter(child => 
-            child.name.toLowerCase().includes(lowerTerm) || 
-            (child.description && child.description.toLowerCase().includes(lowerTerm))
-        );
-
-        // Include group if parent matches or any child matches
-        if (parentMatches || matchingChildren.length > 0) {
-            return { parent: root, children: matchingChildren };
-        }
-
-        return null;
-    }).filter((g): g is { parent: CategoryDef, children: CategoryDef[] } => g !== null);
-  }, [categories, searchTerm]);
+    return Object.keys(groups).sort().map(parentName => ({
+        parent: categories.find(c => c.name === parentName && !c.parent),
+        children: groups[parentName]
+    })).filter(g => g.parent);
+  }, [categories]);
 
   const filteredShops = useMemo(() => {
     return shopMappings
@@ -253,14 +235,13 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, onSave, onClose, 
         </button>
       </header>
 
-      <div className="flex bg-white border-b border-gray-200 flex-shrink-0 overflow-x-auto no-scrollbar">
-          <button onClick={() => handleTabChange('accounts')} className={`flex-1 min-w-[80px] py-3 text-sm font-bold uppercase tracking-wide border-b-2 transition-colors ${activeTab === 'accounts' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500'}`}>Konta</button>
-          <button onClick={() => handleTabChange('categories')} className={`flex-1 min-w-[80px] py-3 text-sm font-bold uppercase tracking-wide border-b-2 transition-colors ${activeTab === 'categories' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500'}`}>Kategorie</button>
-          <button onClick={() => handleTabChange('shops')} className={`flex-1 min-w-[80px] py-3 text-sm font-bold uppercase tracking-wide border-b-2 transition-colors ${activeTab === 'shops' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500'}`}>Sklepy</button>
+      <div className="flex bg-white border-b border-gray-200 flex-shrink-0">
+          <button onClick={() => handleTabChange('accounts')} className={`flex-1 py-3 text-sm font-bold uppercase tracking-wide border-b-2 transition-colors ${activeTab === 'accounts' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500'}`}>Konta</button>
+          <button onClick={() => handleTabChange('categories')} className={`flex-1 py-3 text-sm font-bold uppercase tracking-wide border-b-2 transition-colors ${activeTab === 'categories' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500'}`}>Kategorie</button>
+          <button onClick={() => handleTabChange('shops')} className={`flex-1 py-3 text-sm font-bold uppercase tracking-wide border-b-2 transition-colors ${activeTab === 'shops' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500'}`}>Sklepy</button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        
         <div className="relative flex-shrink-0">
             <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Szukaj..." className="w-full bg-white border border-gray-300 rounded-xl py-2 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm" />
         </div>

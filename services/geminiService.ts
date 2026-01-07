@@ -34,29 +34,10 @@ export const parseReceiptImage = async (
     2. Zidentyfikuj Datę (YYYY-MM-DD).
     3. Zidentyfikuj Kwotę Całkowitą (SUMA/TOTAL).
     4. Wykryj Metodę Płatności.
-    
-    5. DETEKCJA I KALKULACJA POZYCJI (Kluczowe: Logika Rabatów):
-       Musisz zidentyfikować, który z dwóch systemów rabatowych jest stosowany na paragonie i zastosować odpowiednią matematykę.
-
-       SCENARIUSZ A: RABATY BEZPOŚREDNIE (Pod pozycją)
-       - Jeśli pod produktem znajduje się linia "Rabat", "Promocja", "Upust" z kwotą ujemną -> Odejmij ją bezpośrednio od ceny tego produktu.
-
-       SCENARIUSZ B: OPUSTY ZBIORCZE WG STAWEK VAT (np. Carrefour, Biedronka)
-       - Jest to sytuacja, gdy rabaty są wymienione DOPIERO NA KOŃCU paragonu (przed sumą), np. "OPUST w stawce A", "OPUST w stawce B".
-       - KROK 1: Zidentyfikuj stawkę VAT dla każdego produktu. Zazwyczaj jest to litera (A, B, C, D) na samym końcu linii z ceną produktu (np. "Ser Żółty ... 15.00 A").
-       - KROK 2: Zsumuj wartość produktów dla każdej grupy (np. Suma produktów A = 100 zł).
-       - KROK 3: Znajdź kwotę opustu dla tej grupy na dole paragonu (np. Opust A = -10 zł).
-       - KROK 4: Zastosuj opust PROPORCJONALNIE dla każdego produktu z tej grupy.
-         Wzór: Cena_Netto = Cena_Z_Półki - (Cena_Z_Półki / Suma_Grupy * Kwota_Opustu).
-         Przykład: Produkt za 20zł z grupy A (gdzie suma A to 100zł, a opust A to 10zł) -> Rabat wynosi 2zł (20% z 10zł). Cena końcowa = 18zł.
-
-    6. WYLISTUJ POZYCJE W JSON:
-       - Pole 'price' to CENA KOŃCOWA (po odjęciu rabatu pozycyjnego LUB proporcjonalnego opustu VAT).
-       - Pole 'originalPrice' to cena przed rabatem.
-       - Pole 'discount' to kwota odjęta.
-       - Suma wszystkich 'price' MUSI równać się Kwocie Całkowitej paragonu.
-
-    7. KATEGORIE: Przypisz kategorię z listy ZNANE KATEGORIE. Staraj się być jak najbardziej precyzyjny (wybieraj podkategorie jeśli pasują).
+    5. WYLISTUJ POZYCJE (BARDZO WAŻNE - OBSŁUGA RABATÓW):
+       - Jeśli znajdziesz rabat (np. "Promocja", "Rabat", "Upust"), musisz go odjąć od konkretnego produktu, którego dotyczy.
+       - Suma wszystkich "price" MUSI równać się Kwocie Całkowitej paragonu.
+    6. KATEGORIE: Przypisz kategorię z listy ZNANE KATEGORIE. Staraj się być jak najbardziej precyzyjny (wybieraj podkategorie jeśli pasują).
 
     Zwróć TYLKO poprawny obiekt JSON:
     {

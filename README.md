@@ -1,100 +1,33 @@
-# Receipt2HomeBank 🧾➡️💰
+# Receipt2HomeBank
 
-**Receipt2HomeBank** is a modern, mobile-first web application that uses Artificial Intelligence (Google Gemini) to scan shopping receipts, extract line items, categorize them, and export the data directly into a CSV format compatible with [HomeBank](http://homebank.free.fr/) personal finance software.
+A mobile-first web application designed to automate receipt entry for [**HomeBank**](https://www.gethomebank.org/en/) personal finance software using AI.
 
-## ✨ Features
+## Core Features
 
-*   **AI-Powered OCR**: Instantly extracts store name, date, total amount, payment method, and line items from receipt photos using Google Gemini 2.0 Flash.
-*   **Smart Categorization**: Automatically assigns categories to purchased items based on your personal category tree.
-*   **Batch Processing**: Scan multiple receipts in one session and export them all at once.
-*   **Review & Edit**:
-    *   Verify detected prices and sums with built-in math validation.
-    *   Edit item names, prices, and categories via a polished mobile interface.
-    *   Handle discounts and complex receipt layouts automatically.
-*   **Flexible Export**:
-    *   **New CSV**: Generate a new timestamped file for import.
-    *   **Append Mode**: Add new transactions to an existing local CSV file (great for monthly logs).
-*   **Customization**:
-    *   **Accounts**: Manage your wallet/bank accounts (PLN, EUR, USD, etc.).
-    *   **Categories**: Create and color-code nested categories.
-    *   **Shop Mappings**: Map raw receipt names (e.g., "JMP S.A. Biedronka") to clean names (e.g., "Biedronka").
-*   **Privacy Focused**: All settings are stored locally in your browser (`localStorage`). CSV files are generated and saved locally on your device.
+- **AI OCR Scanning**: Uses Gemini 2.5/3 to extract store names, dates, items, and totals from receipt photos.
+- **Smart Categorization**: Automatically maps items to your hierarchical HomeBank categories based on AI context.
+- **Store Mapping**: Clean up messy OCR store names (e.g., "JM DIERONIMO..." -> "Biedronka") via custom settings.
+- **CSV Import (Append Mode)**: Load existing HomeBank CSV files to add new scans to an existing session.
+- **Batch Export**: Download a semicolon-separated CSV formatted specifically for HomeBank import.
+- **Mobile-First Design**: Optimized for mobile browsers with "Click to Confirm" deletions and camera integration.
+- **Persistence**: All settings (Accounts, Categories, Shop Mappings) are saved locally in the browser.
 
-## 🚀 Getting Started
+## Workflow
 
-### Prerequisites
+1. **Configure**: Set up your Accounts and Categories in Settings (matches HomeBank setup).
+2. **Import (Optional)**: Load an existing CSV if you want to append to a previous list.
+3. **Scan**: Take a photo of a receipt.
+4. **Review**: Verify items and categories. AI handles math corrections automatically.
+5. **Download**: Export the batch as a HomeBank-compatible CSV.
 
-1.  **Google Gemini API Key**: You need a free or paid API key from [Google AI Studio](https://aistudio.google.com/).
-2.  **Node.js**: (If running locally)
+## Technical Setup
 
-### Installation
+- **Frontend**: React 19, Tailwind CSS.
+- **AI Engine**: Google Gemini API (`gemini-3-flash-preview`).
+- **Permissions**: Requires Camera access for scanning.
+- **Environment**: Requires `process.env.API_KEY` for Gemini API calls.
 
-1.  Clone the repository:
-    ```bash
-    git clone https://github.com/yourusername/receipt2homebank.git
-    cd receipt2homebank
-    ```
-
-2.  Create an environment variable file (`.env`) in the root directory and add your API key:
-    ```env
-    API_KEY=your_google_gemini_api_key_here
-    ```
-
-3.  Install dependencies (assuming a standard React build setup):
-    ```bash
-    npm install
-    ```
-
-4.  Start the application:
-    ```bash
-    npm start
-    ```
-
-## 📱 Usage Guide
-
-1.  **Setup**: On first launch, go to **Settings** (Gear icon).
-    *   **Accounts**: Add your payment accounts (e.g., "Cash", "Credit Card").
-    *   **Categories**: Review the default categories or add your own to match your HomeBank configuration.
-    *   **Shops**: (Optional) Add mappings if you want to standardize payee names.
-
-2.  **Scan**:
-    *   Click the **Scan Receipt** button on the home screen.
-    *   Take a photo or upload an image of a receipt.
-    *   Select the **Target Account** (Wallet) for this expense.
-
-3.  **Review**:
-    *   The app will display the extracted data.
-    *   **Math Check**: If the sum of items doesn't match the receipt total, a warning will appear.
-    *   **Edit**: Tap any item to change its name, price, or category.
-    *   **Add/Remove**: You can add missing items or remove incorrect ones.
-    *   Click **Approve** to finish or **Add Next** to scan another receipt immediately.
-
-4.  **Export**:
-    *   In the **Session Summary**, review all processed receipts.
-    *   Click **New CSV** to download a fresh file.
-    *   Click **Add to CSV** to append these transactions to an existing file on your device.
-
-## 📂 CSV Format (HomeBank)
-
-The generated CSV uses the standard HomeBank import format with semi-colon separators:
-
+## HomeBank CSV Format
+Exports use the standard format:
 `Date;Mode;Info;Payee;Memo;Amount;Category;Tags`
-
-*   **Date**: YYYY-MM-DD
-*   **Mode**: 1=Credit Card, 3=Cash, 8=Debit/General (Auto-detected).
-*   **Payee**: Cleaned store name.
-*   **Memo**: List of items in that category (e.g., "Milk, Bread + 2 others").
-*   **Amount**: Negative value for expenses.
-*   **Category**: The assigned category name.
-
-## 🛠️ Tech Stack
-
-*   **Frontend**: React 19, TypeScript
-*   **Styling**: Tailwind CSS
-*   **AI/OCR**: Google GenAI SDK (`@google/genai`)
-*   **Icons**: Hand-crafted SVGs (Lucide-style)
-*   **Storage**: Browser LocalStorage
-
-## 📄 License
-
-This project is open-source and available under the MIT License.
+*(Semicolon delimited, UTF-8)*
