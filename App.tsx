@@ -1,12 +1,12 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { AppSettings, ReceiptData, ReceiptItem } from './types';
+import React, { useState, useEffect } from 'react';
+import { AppSettings, ReceiptData } from './types';
 import { DEFAULT_SETTINGS } from './data/defaultData';
 import SettingsView from './components/SettingsView';
 import ProcessingView from './components/ProcessingView';
 import ReceiptReviewView from './components/ReceiptReviewView';
 import BatchSummaryView from './components/BatchSummaryView';
-import { CameraIcon, SettingsIcon, FileIcon } from './components/Icon';
+import { CameraIcon, SettingsIcon } from './components/Icon';
 import { parseReceiptImage } from './services/geminiService';
 
 enum AppView {
@@ -23,15 +23,21 @@ const App: React.FC = () => {
   const [processingStatus, setProcessingStatus] = useState<string>("Przygotowywanie...");
   const [settingsInitialTab, setSettingsInitialTab] = useState<'accounts' | 'categories' | 'shops'>('accounts');
   
+  // State for the single receipt currently being processed/edited
   const [currentReceipt, setCurrentReceipt] = useState<ReceiptData | null>(null);
+  
+  // State for the batch of confirmed receipts
   const [confirmedReceipts, setConfirmedReceipts] = useState<ReceiptData[]>([]);
+
   const [error, setError] = useState<string | null>(null);
+  
+  // New state for pre-selection
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
 
-  const csvInputRef = useRef<HTMLInputElement>(null);
-
+  // Load settings from local storage on mount
   useEffect(() => {
-    const saved = localStorage.getItem('receipt2homebank_settings_v2');
+    // Version bumped to v3 to load new default categories
+    const saved = localStorage.getItem('receipt2homebank_settings_v3');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -58,64 +64,7 @@ const App: React.FC = () => {
 
   const handleSettingsSave = (newSettings: AppSettings) => {
     setSettings(newSettings);
-    localStorage.setItem('receipt2homebank_settings_v2', JSON.stringify(newSettings));
-  };
-
-  const handleCsvImport = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        try {
-            const content = e.target?.result as string;
-            const lines = content.split('\n').filter(line => line.trim().length > 0);
-            
-            const importedReceipts: ReceiptData[] = lines.map(line => {
-                // HomeBank CSV: date;mode;info;payee;memo;amount;category;tags
-                const parts = line.split(';').map(p => p.trim().replace(/^"(.*)"$/, '$1'));
-                if (parts.length < 7) return null;
-
-                const date = parts[0];
-                const mode = parts[1];
-                const storeName = parts[3];
-                const memo = parts[4];
-                const amount = Math.abs(parseFloat(parts[5].replace(',', '.')));
-                const category = parts[6];
-
-                const receipt: ReceiptData = {
-                    storeName: storeName || "Importowany",
-                    date: date,
-                    total: amount,
-                    detectedPaymentMethod: mode === "3" ? "Gotówka" : "Karta",
-                    items: [
-                        {
-                            id: Math.random().toString(36).substr(2, 9),
-                            name: memo || "Zakupy",
-                            price: amount,
-                            originalPrice: amount,
-                            discount: 0,
-                            category: category || settings.categories[0].name
-                        }
-                    ],
-                    isMathValid: true
-                };
-                return receipt;
-            }).filter((r): r is ReceiptData => r !== null);
-
-            if (importedReceipts.length > 0) {
-                setConfirmedReceipts(prev => [...prev, ...importedReceipts]);
-                setCurrentView(AppView.BATCH_SUMMARY);
-            } else {
-                setError("Nie znaleziono poprawnych danych w pliku CSV.");
-            }
-        } catch (err) {
-            setError("Błąd podczas importowania pliku CSV.");
-        }
-    };
-    reader.readAsText(file);
-    // Reset input
-    if (csvInputRef.current) csvInputRef.current.value = '';
+    localStorage.setItem('receipt2homebank_settings_v3', JSON.stringify(newSettings));
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -157,6 +106,7 @@ const App: React.FC = () => {
 
   const handleEditReceiptFromBatch = (index: number) => {
     const receiptToEdit = confirmedReceipts[index];
+    // Remove it from the batch while editing to prevent duplicates
     const updatedBatch = confirmedReceipts.filter((_, i) => i !== index);
     setConfirmedReceipts(updatedBatch);
     setCurrentReceipt(receiptToEdit);
@@ -249,6 +199,7 @@ const App: React.FC = () => {
                   </button>
               )}
 
+              {/* Account Pre-Selection */}
               <div className="w-full max-w-sm mb-4 flex-shrink-0">
                 <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5 pl-1 tracking-wider">
                     Wybierz Konto dla Paragonu
@@ -271,6 +222,7 @@ const App: React.FC = () => {
                 </div>
               </div>
 
+              {/* Upload Area - Now dynamic */}
               <div className="w-full max-w-sm flex-1 mb-4 bg-gray-50 border-2 border-dashed border-gray-300 rounded-3xl flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-400 transition-colors min-h-[180px]">
                 <input 
                   type="file" 
@@ -291,23 +243,8 @@ const App: React.FC = () => {
               </div>
             </main>
 
+            {/* Footer with Stats */}
             <div className="bg-gray-50 py-4 border-t border-gray-100 flex-shrink-0">
-                  <div className="flex gap-2 px-4 justify-center mb-4">
-                      <input 
-                        type="file" 
-                        ref={csvInputRef}
-                        accept=".csv,text/csv"
-                        onChange={handleCsvImport}
-                        className="hidden"
-                      />
-                      <button 
-                        onClick={() => csvInputRef.current?.click()}
-                        className="bg-white flex-[2] py-3 rounded-xl border border-indigo-100 shadow-sm flex items-center justify-center gap-2 active:scale-95 transition-transform"
-                      >
-                          <FileIcon />
-                          <span className="text-sm font-bold text-indigo-700">Wczytaj istniejący CSV</span>
-                      </button>
-                  </div>
                   <p className="text-center text-[10px] text-gray-400 uppercase tracking-widest mb-2 font-bold">Baza Danych</p>
                   <div className="flex gap-2 px-4 justify-center">
                       <button 

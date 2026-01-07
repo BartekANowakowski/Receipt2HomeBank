@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useRef } from 'react';
 import { ReceiptData, formatCurrency } from '../types';
 import { DownloadIcon, PlusIcon, TrashIcon, EditIcon } from './Icon';
 
@@ -11,7 +12,7 @@ interface BatchSummaryViewProps {
 }
 
 const BatchSummaryView: React.FC<BatchSummaryViewProps> = ({ receipts, onAddMore, onRemoveReceipt, onEditReceipt }) => {
-  
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const totalSum = receipts.reduce((sum, r) => sum + r.total, 0);
 
   const getHomeBankMode = (method: string): string => {
@@ -21,11 +22,10 @@ const BatchSummaryView: React.FC<BatchSummaryViewProps> = ({ receipts, onAddMore
       return "8"; 
   };
 
-  const generateBatchCSV = () => {
+  const generateCSVContent = (): string => {
     let csvContent = "";
 
     receipts.forEach(receipt => {
-        // Group items by category and store names + prices for the memo
         const categoryData = new Map<string, { total: number, items: { name: string, price: number }[] }>();
         
         receipt.items.forEach(item => {
@@ -38,18 +38,13 @@ const BatchSummaryView: React.FC<BatchSummaryViewProps> = ({ receipts, onAddMore
         const mode = getHomeBankMode(receipt.detectedPaymentMethod);
 
         Array.from(categoryData.entries()).forEach(([category, data]) => {
-            // Sort items by price descending for the memo logic
             const sortedItems = [...data.items].sort((a, b) => b.price - a.price);
-            
             let memo = "";
             if (sortedItems.length === 1) {
-                // 1 item: use description
                 memo = sortedItems[0].name;
             } else if (sortedItems.length <= 3) {
-                // 2-3 items: list all, sorted by price
                 memo = sortedItems.map(i => i.name).join(", ");
             } else {
-                // >3 items: largest + count
                 memo = `${sortedItems[0].name} + ${sortedItems.length - 1} innych`;
             }
 
@@ -66,17 +61,66 @@ const BatchSummaryView: React.FC<BatchSummaryViewProps> = ({ receipts, onAddMore
             csvContent += row + "\n";
         });
     });
+    return csvContent;
+  };
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
+  const getTimestampName = () => {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}_${hh}${min}${ss}_homebank.csv`;
+  };
+
+  const triggerDownload = (content: string, filename: string) => {
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    const dateStr = new Date().toISOString().split('T')[0];
-    link.setAttribute("download", `homebank_import_batch_${dateStr}.csv`);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleDownloadNew = () => {
+    const content = generateCSVContent();
+    const filename = getTimestampName();
+    triggerDownload(content, filename);
+  };
+
+  const handleAppendClick = () => {
+    if (fileInputRef.current) {
+        fileInputRef.current.click();
+    }
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        let oldContent = e.target?.result as string;
+        // Ensure old content ends with a newline if it doesn't have one and isn't empty
+        if (oldContent && !oldContent.endsWith('\n')) {
+            oldContent += '\n';
+        }
+        
+        const newRows = generateCSVContent();
+        const combinedContent = oldContent + newRows;
+        
+        // Use the original filename to simulate "updating" the file
+        triggerDownload(combinedContent, file.name);
+        
+        // Reset input
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+    reader.readAsText(file);
   };
 
   return (
@@ -123,7 +167,6 @@ const BatchSummaryView: React.FC<BatchSummaryViewProps> = ({ receipts, onAddMore
             </div>
         ))}
         
-        {/* Action: Add More (Moved here between list and total) */}
         <button 
             onClick={onAddMore}
             className="w-full bg-emerald-600 text-white font-bold text-base py-4 px-6 rounded-2xl shadow-lg shadow-emerald-100 flex items-center justify-center gap-3 active:scale-[0.98] transition-all mt-4 mb-2"
@@ -139,14 +182,31 @@ const BatchSummaryView: React.FC<BatchSummaryViewProps> = ({ receipts, onAddMore
       </div>
 
       <div className="bg-white border-t border-gray-200 p-4 pb-8 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-        {/* Final Action: Download CSV (Now Indigo/Blue to distinguish from green Add button) */}
-        <button 
-            onClick={generateBatchCSV}
-            className="w-full bg-indigo-50 border-2 border-indigo-600 text-indigo-700 font-bold text-lg py-3 px-6 rounded-xl flex items-center justify-center gap-2 hover:bg-indigo-100 transition-all active:scale-[0.99]"
-        >
-            <DownloadIcon />
-            <span>Pobierz Zbiorczy CSV</span>
-        </button>
+        {/* Hidden file input for "Append" functionality */}
+        <input 
+            type="file" 
+            ref={fileInputRef} 
+            accept=".csv" 
+            style={{ display: 'none' }} 
+            onChange={handleFileSelect}
+        />
+        
+        <div className="flex gap-3">
+            <button 
+                onClick={handleAppendClick}
+                className="flex-1 bg-white border-2 border-indigo-100 text-indigo-600 font-bold py-3.5 px-2 rounded-xl flex items-center justify-center gap-2 hover:bg-indigo-50 hover:border-indigo-200 transition-all active:scale-[0.98]"
+            >
+                <div className="rotate-180 transform"><DownloadIcon /></div>
+                <span className="text-sm">Dodaj do CSV</span>
+            </button>
+            <button 
+                onClick={handleDownloadNew}
+                className="flex-1 bg-indigo-600 text-white font-bold py-3.5 px-2 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-[0.98]"
+            >
+                <DownloadIcon />
+                <span className="text-sm">Nowy CSV</span>
+            </button>
+        </div>
       </div>
     </div>
   );
